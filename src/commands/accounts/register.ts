@@ -9,8 +9,8 @@ import {
 } from '@clack/prompts'
 import type { Command } from 'commander'
 
-import { supabase } from '../services/supabase.js'
-import { isValidEmail, isValidUsername } from '../utils/validators.js'
+import { supabase } from '../../services/supabase.js'
+import { isValidEmail, isValidUsername } from '../../utils/validators.js'
 
 export function registerRegisterCommand(program: Command): void {
   program

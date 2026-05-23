@@ -2,7 +2,7 @@ import chalk from 'chalk'
 import { confirm, isCancel, cancel, outro } from '@clack/prompts'
 import type { Command } from 'commander'
 
-import { getSession, clearSession } from '../services/session.js'
+import { getSession, clearSession } from '../../services/session.js'
 
 export function registerLogoutCommand(program: Command): void {
   program

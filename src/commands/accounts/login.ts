@@ -2,9 +2,9 @@ import chalk from 'chalk'
 import { text, password, isCancel, cancel, outro } from '@clack/prompts'
 import type { Command } from 'commander'
 
-import { supabase } from '../services/supabase.js'
-import { saveSession } from '../services/session.js'
-import { isValidEmail } from '../utils/validators.js'
+import { supabase } from '../../services/supabase.js'
+import { saveSession } from '../../services/session.js'
+import { isValidEmail } from '../../utils/validators.js'
 
 export function registerLoginCommand(program: Command): void {
   program

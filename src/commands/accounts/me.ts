@@ -2,7 +2,7 @@ import chalk from 'chalk'
 import { outro } from '@clack/prompts'
 import type { Command } from 'commander'
 
-import { getSession } from '../services/session.js'
+import { getSession } from '../../services/session.js'
 
 export function registerMeCommand(program: Command): void {
   program
