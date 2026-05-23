@@ -4,18 +4,30 @@ import chalk from 'chalk'
 import fs from 'fs-extra'
 import clipboard from 'clipboardy'
 import { select, confirm, isCancel, cancel, outro } from '@clack/prompts'
+import type { Command } from 'commander'
 
 import { parsePromptRef } from '../utils/promptRef.js'
-import { getPromptContent, getPromptMetadata } from '../services/registry.js'
+import {
+  getPromptContent,
+  getPromptMetadata,
+  type PromptMetadata
+} from '../services/registry.js'
 
-export function registerGetCommand(program) {
+type GetCommandOptions = {
+  copy?: boolean
+  file?: boolean
+}
+
+type PromptAction = 'copy' | 'file' | 'skill'
+
+export function registerGetCommand(program: Command): void {
   program
     .command('get')
     .description('Get a prompt from the Prompt-it registry.')
     .argument('<promptRef>', 'Prompt reference. Example: prompt-it/test')
     .option('--copy', 'Copy prompt content directly to clipboard.')
     .option('--file', 'Create a markdown file with the prompt content.')
-    .action(async (promptRef, options) => {
+    .action(async (promptRef: string, options: GetCommandOptions) => {
       try {
         const { user, promptName } = parsePromptRef(promptRef)
 
@@ -43,12 +55,19 @@ export function registerGetCommand(program) {
 
         await showPromptAndAskAction(content, metadata, promptName)
       } catch (error) {
-        console.log(chalk.red(`Error: ${error.message}`))
+        const message =
+          error instanceof Error ? error.message : 'Unexpected error occurred.'
+
+        console.log(chalk.red(`Error: ${message}`))
       }
     })
 }
 
-async function showPromptAndAskAction(content, metadata, promptName) {
+async function showPromptAndAskAction(
+  content: string,
+  metadata: PromptMetadata,
+  promptName: string
+): Promise<void> {
   console.log('')
   console.log(chalk.cyan(`# ${metadata.title || promptName}`))
   console.log(chalk.gray(`Author: ${metadata.author || 'unknown'}`))
@@ -56,7 +75,7 @@ async function showPromptAndAskAction(content, metadata, promptName) {
   console.log(content)
   console.log('')
 
-  const action = await select({
+  const action = await select<PromptAction>({
     message: 'What do you want to do with this prompt?',
     options: [
       {
@@ -91,10 +110,14 @@ async function showPromptAndAskAction(content, metadata, promptName) {
 
   if (action === 'skill') {
     outro('Skill integration is coming soon.')
+    return
   }
 }
 
-async function copyPromptToClipboard(content, metadata) {
+async function copyPromptToClipboard(
+  content: string,
+  metadata: PromptMetadata
+): Promise<void> {
   await clipboard.write(content)
 
   console.log(
@@ -104,7 +127,10 @@ async function copyPromptToClipboard(content, metadata) {
   )
 }
 
-async function createPromptFile(content, promptName) {
+async function createPromptFile(
+  content: string,
+  promptName: string
+): Promise<void> {
   const fileName = `${promptName}.md`
   const filePath = path.join(process.cwd(), fileName)
 
