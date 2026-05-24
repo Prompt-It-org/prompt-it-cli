@@ -5,6 +5,7 @@ import { registerLoginCommand } from './commands/accounts/login.js'
 import { registerMeCommand } from './commands/accounts/me.js'
 import { registerLogoutCommand } from './commands/accounts/logout.js'
 import { registerInitCommand } from './commands/init.js'
+import { registerPublishCommand } from './commands/publish.js'
 
 const program = new Command()
 
@@ -19,6 +20,7 @@ registerLoginCommand(program)
 registerMeCommand(program)
 registerLogoutCommand(program)
 registerInitCommand(program)
+registerPublishCommand(program)
 
 program
   .command('help')
