@@ -3,6 +3,7 @@ import process from 'node:process'
 import chalk from 'chalk'
 import fs from 'fs-extra'
 import clipboard from 'clipboardy'
+import { applyPatch } from 'diff'
 import { select, confirm, isCancel, cancel, outro } from '@clack/prompts'
 import type { Command } from 'commander'
 
@@ -29,11 +30,32 @@ type SupabasePrompt = {
   tags: string[]
 }
 
+type PromptVersionRecord = {
+  version: string
+  base_version: string | null
+  change_type: 'snapshot' | 'diff'
+  diff: string | null
+  snapshot_content: string | null
+  created_at: string
+}
+
+type ResolvedPrompt = SupabasePrompt & {
+  resolved_content: string
+  resolved_version: string
+  is_historical_version: boolean
+}
+
+type Semver = {
+  major: number
+  minor: number
+  patch: number
+}
+
 export function registerGetCommand(program: Command): void {
   program
     .command('get')
     .description('Get a prompt from Prompt-it.')
-    .argument('<promptRef>', 'Prompt reference. Example: miguel/test')
+    .argument('<promptRef>', 'Prompt reference. Example: miguel/test or miguel/test@1.0.1')
     .argument('[action]', 'Optional action. Use "details" to create prompt-details.json.')
     .option('--copy', 'Copy prompt content directly to clipboard.')
     .option('--file', 'Create a markdown file with the prompt content.')
@@ -44,7 +66,7 @@ export function registerGetCommand(program: Command): void {
         options: GetCommandOptions
       ) => {
         try {
-          const { user, promptName } = parsePromptRef(promptRef)
+          const { user, promptName, version } = parsePromptRef(promptRef)
 
           if (action && action !== 'details') {
             console.log(chalk.red(`Unknown get action: ${action}`))
@@ -59,6 +81,8 @@ export function registerGetCommand(program: Command): void {
             return
           }
 
+          const resolvedPrompt = await resolvePromptVersion(prompt, version)
+
           if (options.copy && options.file) {
             console.log(
               chalk.red('Use only one option at a time: --copy or --file.')
@@ -67,23 +91,23 @@ export function registerGetCommand(program: Command): void {
           }
 
           if (action === 'details') {
-            await createPromptDetailsFile(prompt)
+            await createPromptDetailsFile(resolvedPrompt)
             return
           }
 
           if (options.copy) {
-            await copyPromptToClipboard(prompt)
+            await copyPromptToClipboard(resolvedPrompt)
             return
           }
 
           if (options.file) {
-            await createPromptFile(prompt)
+            await createPromptFile(resolvedPrompt)
             return
           }
 
-          const isOwner = await checkIsPromptOwner(prompt)
+          const isOwner = await checkIsPromptOwner(resolvedPrompt)
 
-          await showPromptAndAskAction(prompt, isOwner)
+          await showPromptAndAskAction(resolvedPrompt, isOwner)
         } catch (error) {
           const message =
             error instanceof Error ? error.message : 'Unexpected error occurred.'
@@ -115,7 +139,132 @@ async function getPromptFromSupabase(
   return data
 }
 
-async function checkIsPromptOwner(prompt: SupabasePrompt): Promise<boolean> {
+async function resolvePromptVersion(
+  prompt: SupabasePrompt,
+  requestedVersion?: string
+): Promise<ResolvedPrompt> {
+  if (!requestedVersion || requestedVersion === prompt.current_version) {
+    return {
+      ...prompt,
+      resolved_content: prompt.current_content,
+      resolved_version: prompt.current_version,
+      is_historical_version: false
+    }
+  }
+
+  const versionContent = await getPromptContentByVersion(
+    prompt.id,
+    requestedVersion
+  )
+
+  return {
+    ...prompt,
+    resolved_content: versionContent,
+    resolved_version: requestedVersion,
+    is_historical_version: true
+  }
+}
+
+async function getPromptContentByVersion(
+  promptId: string,
+  requestedVersion: string
+): Promise<string> {
+  const { data, error } = await supabase
+    .from('prompt_versions')
+    .select('version, base_version, change_type, diff, snapshot_content, created_at')
+    .eq('prompt_id', promptId)
+
+  if (error) {
+    throw new Error(`Could not fetch prompt versions: ${error.message}`)
+  }
+
+  const versions = (data ?? []) as PromptVersionRecord[]
+
+  if (versions.length === 0) {
+    throw new Error('No version history found for this prompt.')
+  }
+
+  const requestedVersionRecord = versions.find(
+    version => version.version === requestedVersion
+  )
+
+  if (!requestedVersionRecord) {
+    throw new Error(`Version not found: ${requestedVersion}`)
+  }
+
+  if (
+    requestedVersionRecord.change_type === 'snapshot' &&
+    requestedVersionRecord.snapshot_content
+  ) {
+    return requestedVersionRecord.snapshot_content
+  }
+
+  const sortedVersions = versions
+    .filter(version => compareSemver(version.version, requestedVersion) <= 0)
+    .sort((a, b) => compareSemver(a.version, b.version))
+
+  const requestedIndex = sortedVersions.findIndex(
+    version => version.version === requestedVersion
+  )
+
+  if (requestedIndex === -1) {
+    throw new Error(`Version not found: ${requestedVersion}`)
+  }
+
+  let snapshotIndex = -1
+
+  for (let index = requestedIndex; index >= 0; index--) {
+    const version = sortedVersions[index]
+
+    if (version.change_type === 'snapshot' && version.snapshot_content) {
+      snapshotIndex = index
+      break
+    }
+  }
+
+  if (snapshotIndex === -1) {
+    throw new Error(
+      `Could not reconstruct version ${requestedVersion}. No snapshot found before it.`
+    )
+  }
+
+  let content = sortedVersions[snapshotIndex].snapshot_content
+
+  if (!content) {
+    throw new Error(
+      `Could not reconstruct version ${requestedVersion}. Snapshot content is missing.`
+    )
+  }
+
+  for (let index = snapshotIndex + 1; index <= requestedIndex; index++) {
+    const version = sortedVersions[index]
+
+    if (version.change_type === 'snapshot') {
+      if (!version.snapshot_content) {
+        throw new Error(`Snapshot content is missing for version ${version.version}.`)
+      }
+
+      content = version.snapshot_content
+      continue
+    }
+
+    if (!version.diff) {
+      throw new Error(`Diff content is missing for version ${version.version}.`)
+    }
+
+    const patchedContent = applyPatch(content, version.diff)
+
+    if (patchedContent === false) {
+      throw new Error(`Could not apply diff for version ${version.version}.`)
+    }
+
+    content = patchedContent
+  }
+
+  return content
+}
+
+async function checkIsPromptOwner(prompt: ResolvedPrompt): Promise<boolean> {
   const session = await getSession()
 
   if (!session) {
@@ -126,15 +275,20 @@ async function checkIsPromptOwner(prompt: SupabasePrompt): Promise<boolean> {
 }
 
 async function showPromptAndAskAction(
-  prompt: SupabasePrompt,
+  prompt: ResolvedPrompt,
   isOwner: boolean
 ): Promise<void> {
   console.log('')
   console.log(chalk.cyan(`# ${prompt.title || prompt.name}`))
   console.log(chalk.gray(`Author: ${prompt.username}`))
-  console.log(chalk.gray(`Version: ${prompt.current_version}`))
+  console.log(chalk.gray(`Version: ${prompt.resolved_version}`))
+
+  if (prompt.is_historical_version) {
+    console.log(chalk.gray(`Latest version: ${prompt.current_version}`))
+  }
+
   console.log('')
-  console.log(prompt.current_content)
+  console.log(prompt.resolved_content)
   console.log('')
 
   const action = await select<PromptAction>({
@@ -178,7 +332,7 @@ async function showPromptAndAskAction(
 }
 
 async function askToCreatePromptDetailsFile(
-  prompt: SupabasePrompt
+  prompt: ResolvedPrompt
 ): Promise<void> {
   const shouldCreateDetails = await confirm({
     message: 'Get prompt-details.json?',
@@ -192,14 +346,18 @@ async function askToCreatePromptDetailsFile(
   await createPromptDetailsFile(prompt)
 }
 
-async function copyPromptToClipboard(prompt: SupabasePrompt): Promise<void> {
-  await clipboard.write(prompt.current_content)
+async function copyPromptToClipboard(prompt: ResolvedPrompt): Promise<void> {
+  await clipboard.write(prompt.resolved_content)
 
   console.log(chalk.green(`Copied "${prompt.title || prompt.name}" to clipboard.`))
 }
 
-async function createPromptFile(prompt: SupabasePrompt): Promise<void> {
-  const fileName = `${prompt.name}.md`
+async function createPromptFile(prompt: ResolvedPrompt): Promise<void> {
+  const fileName =
+    prompt.is_historical_version
+      ? `${prompt.name}@${prompt.resolved_version}.md`
+      : `${prompt.name}.md`
+
   const filePath = path.join(process.cwd(), fileName)
 
   const exists = await fs.pathExists(filePath)
@@ -216,12 +374,12 @@ async function createPromptFile(prompt: SupabasePrompt): Promise<void> {
     }
   }
 
-  await fs.writeFile(filePath, prompt.current_content, 'utf8')
+  await fs.writeFile(filePath, prompt.resolved_content, 'utf8')
 
   console.log(chalk.green(`Created file: ${fileName}`))
 }
 
-async function createPromptDetailsFile(prompt: SupabasePrompt): Promise<void> {
+async function createPromptDetailsFile(prompt: ResolvedPrompt): Promise<void> {
   const fileName = 'prompt-details.json'
   const filePath = path.join(process.cwd(), fileName)
 
@@ -244,7 +402,7 @@ async function createPromptDetailsFile(prompt: SupabasePrompt): Promise<void> {
     name: prompt.name,
     title: prompt.title,
     description: prompt.description,
-    version: prompt.current_version,
+    version: prompt.resolved_version,
     tags: prompt.tags ?? []
   }
 
@@ -253,4 +411,37 @@ async function createPromptDetailsFile(prompt: SupabasePrompt): Promise<void> {
   })
 
   console.log(chalk.green(`Created file: ${fileName}`))
+}
+
+function compareSemver(a: string, b: string): number {
+  const versionA = parseSemver(a)
+  const versionB = parseSemver(b)
+
+  if (!versionA || !versionB) {
+    throw new Error('Invalid semantic version found in version history.')
+  }
+
+  if (versionA.major !== versionB.major) {
+    return versionA.major - versionB.major
+  }
+
+  if (versionA.minor !== versionB.minor) {
+    return versionA.minor - versionB.minor
+  }
+
+  return versionA.patch - versionB.patch
+}
+
+function parseSemver(version: string): Semver | null {
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/)
+
+  if (!match) {
+    return null
+  }
+
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3])
+  }
 }
