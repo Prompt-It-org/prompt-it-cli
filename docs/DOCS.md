@@ -26,19 +26,19 @@ The CLI is divided into three main usage categories: **Authentication**, **Promp
 
 To interact with the platform's publishing features, you need to be authenticated with your account.
 
-* ![register](https://img.shields.io/badge/prompt--it-register-2563eb?style=flat-square)
+* `prompt-it register`
   Creates a new Prompt-It account through an interactive flow.
 
-* ![login](https://img.shields.io/badge/prompt--it-login-2563eb?style=flat-square)
+* `prompt-it login`
   Logs into your Prompt-It account to authorize the publishing of new prompts.
 
-* ![logout](https://img.shields.io/badge/prompt--it-logout-2563eb?style=flat-square)
+* `prompt-it logout`
   Securely ends your current session.
 
-* ![me](https://img.shields.io/badge/prompt--it-me-2563eb?style=flat-square)
+* `prompt-it me`
   Displays the details of the currently authenticated user.
 
-* ![uses](https://img.shields.io/badge/prompt--it-uses-2563eb?style=flat-square)
+* `prompt-it uses`
   Shows statistics for your current platform usage, such as total published posts and versions sent compared to your limit.
 
 ---
@@ -47,10 +47,10 @@ To interact with the platform's publishing features, you need to be authenticate
 
 These commands allow you to initialize new prompt projects, publish them, and keep them updated on the Prompt-It cloud.
 
-* ![init](https://img.shields.io/badge/prompt--it-init-ea580c?style=flat-square)
+* `prompt-it init`
   Generates a template `prompt-details.json` file in your current directory. This file will be used to store essential metadata for your prompt (title, description, version, and tags).
 
-* ![publish](https://img.shields.io/badge/prompt--it-publish-ea580c?style=flat-square)
+* `prompt-it publish`
   Publishes a new prompt to the platform. The command can automatically read the `prompt-details.json` file in the current directory, or you can pass options via the command line.
   * **Options**:
     * `--name <name>`: Defines the unique name (slug) of the prompt.
@@ -58,13 +58,13 @@ These commands allow you to initialize new prompt projects, publish them, and ke
     * `--description <description>`: A detailed description of its purpose.
     * `--tags <tags>`: A comma-separated list of tags for categorization (e.g., `code,review,ai`).
 
-* ![update](https://img.shields.io/badge/prompt--it-update-ea580c?style=flat-square)
+* `prompt-it update`
   Updates the content or metadata of your prompt that is already published on the platform, creating a new version linked to it.
   * **Options**:
     * The same creation options (`--name`, `--title`, `--description`, `--tags`).
     * `--message <message>`: A commit message briefly indicating what changed in this new version.
 
-* ![delete](https://img.shields.io/badge/prompt--it-delete-ea580c?style=flat-square)
+* `prompt-it delete`
   Permanently deletes a prompt you own. You also have the flexibility to delete a specific version from the prompt's history using the `@version` format (e.g., `prompt-it delete my-prompt@1.0.1`).
 
 ---
@@ -73,12 +73,12 @@ These commands allow you to initialize new prompt projects, publish them, and ke
 
 Tools for exploring public content created by the community and integrating them into your environment.
 
-* ![search](https://img.shields.io/badge/prompt--it-search-0ea5e9?style=flat-square)
+* `prompt-it search`
   Performs a paginated search across all public prompts on the platform using the provided term. The search covers fields like name, title, description, and username.
   * **Options**:
     * `--users`: Changes the search scope to look exclusively for user profiles instead of prompt content.
 
-* ![get](https://img.shields.io/badge/prompt--it-get-0ea5e9?style=flat-square)
+* `prompt-it get`
   Displays, copies, or downloads a community prompt. If executed without options, the CLI will open an interactive menu with actions to take.
   * **Parameters**:
     * `<promptRef>`: The prompt reference in the format `username/prompt-name`. You can specify a desired version by appending `@version` (e.g., `miguel/test@1.0.1`).
