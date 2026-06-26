@@ -6,10 +6,6 @@ import { supabase } from '../services/supabase.js'
 
 const RESULTS_PER_PAGE = 10
 
-type SearchOptions = {
-  users?: boolean
-}
-
 type PromptSearchField = 'name' | 'title' | 'description' | 'username'
 
 type PromptResult = {
@@ -39,10 +35,9 @@ const promptSearchFields: PromptSearchField[] = [
 export function registerSearchCommand(program: Command): void {
   program
     .command('search')
-    .description('Search public prompts or users.')
-    .argument('<query>', 'Search term.')
-    .option('--users', 'Search users instead of prompts.')
-    .action(async (query: string, options: SearchOptions) => {
+    .description('Search public prompts or users. Use @username to search users.')
+    .argument('<query>', 'Search term. Prefix with @ to search users (e.g. @username).')
+    .action(async (query: string) => {
       try {
         const normalizedQuery = query.trim()
 
@@ -51,8 +46,15 @@ export function registerSearchCommand(program: Command): void {
           return
         }
 
-        if (options.users) {
-          await searchUsers(normalizedQuery)
+        if (normalizedQuery.startsWith('@')) {
+          const userQuery = normalizedQuery.slice(1)
+
+          if (!userQuery) {
+            console.log(chalk.red('Username is required. Example: prompt-it search @username'))
+            return
+          }
+
+          await searchUsers(userQuery)
           return
         }
 
