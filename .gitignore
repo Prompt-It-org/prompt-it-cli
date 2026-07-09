@@ -36,8 +36,8 @@ Thumbs.db
 session.json
 config.local.json
 
-# Test Folder
-test/
+
+
 
 # Cache
 .cache/

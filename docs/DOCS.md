@@ -67,6 +67,13 @@ These commands allow you to initialize new prompt projects, publish them, and ke
 * `prompt-it delete`
   Permanently deletes a prompt you own. You also have the flexibility to delete a specific version from the prompt's history using the `@version` format (e.g., `prompt-it delete my-prompt@1.0.1`).
 
+* `prompt-it list`
+  A versatile command to inspect prompts. Its behavior changes depending on the argument provided:
+  * **No argument** (`prompt-it list`): Lists all of your own prompts with their descriptions and current versions. Requires login.
+  * **Prompt name** (`prompt-it list my-prompt`): Shows the full version history of a specific prompt you own, including when each version was created. Requires login.
+  * **Version diff** (`prompt-it list my-prompt@1.0.1`): Displays a line-by-line diff comparing the specified version against its previous version, similar to `git diff`. Requires login.
+  * **User lookup** (`prompt-it list @username`): Lists all public prompts published by the specified user. Does **not** require login.
+
 ---
 
 ### ![Search & Consumption](https://img.shields.io/badge/3.-Search_%26_Consumption-06b6d4?style=flat-square)
@@ -75,8 +82,7 @@ Tools for exploring public content created by the community and integrating them
 
 * `prompt-it search`
   Performs a paginated search across all public prompts on the platform using the provided term. The search covers fields like name, title, description, and username.
-  * **Options**:
-    * `--users`: Changes the search scope to look exclusively for user profiles instead of prompt content.
+  * **User search**: Prefix the query with `@` to search for user profiles instead of prompts. Example: `prompt-it search @username`.
 
 * `prompt-it get`
   Displays, copies, or downloads a community prompt. If executed without options, the CLI will open an interactive menu with actions to take.

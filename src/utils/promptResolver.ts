@@ -1,5 +1,6 @@
 import { applyPatch } from 'diff'
 import { supabase } from '../services/supabase.js'
+import { compareSemver } from './semver.js'
 
 export type SupabasePrompt = {
   id: string
@@ -28,12 +29,6 @@ export type ResolvedPrompt = SupabasePrompt & {
   is_historical_version: boolean
 }
 
-export type Semver = {
-  major: number
-  minor: number
-  patch: number
-}
-
 export async function resolvePromptVersion(
   prompt: SupabasePrompt,
   requestedVersion?: string
@@ -47,10 +42,7 @@ export async function resolvePromptVersion(
     }
   }
 
-  const versionContent = await getPromptContentByVersion(
-    prompt.id,
-    requestedVersion
-  )
+  const versionContent = await getPromptContentByVersion(prompt.id, requestedVersion)
 
   return {
     ...prompt,
@@ -79,9 +71,7 @@ export async function getPromptContentByVersion(
     throw new Error('No version history found for this prompt.')
   }
 
-  const requestedVersionRecord = versions.find(
-    version => version.version === requestedVersion
-  )
+  const requestedVersionRecord = versions.find((version) => version.version === requestedVersion)
 
   if (!requestedVersionRecord) {
     throw new Error(`Version not found: ${requestedVersion}`)
@@ -95,12 +85,10 @@ export async function getPromptContentByVersion(
   }
 
   const sortedVersions = versions
-    .filter(version => compareSemver(version.version, requestedVersion) <= 0)
+    .filter((version) => compareSemver(version.version, requestedVersion) <= 0)
     .sort((a, b) => compareSemver(a.version, b.version))
 
-  const requestedIndex = sortedVersions.findIndex(
-    version => version.version === requestedVersion
-  )
+  const requestedIndex = sortedVersions.findIndex((version) => version.version === requestedVersion)
 
   if (requestedIndex === -1) {
     throw new Error(`Version not found: ${requestedVersion}`)
@@ -159,35 +147,3 @@ export async function getPromptContentByVersion(
   return content
 }
 
-export function compareSemver(a: string, b: string): number {
-  const versionA = parseSemver(a)
-  const versionB = parseSemver(b)
-
-  if (!versionA || !versionB) {
-    throw new Error('Invalid semantic version found in version history.')
-  }
-
-  if (versionA.major !== versionB.major) {
-    return versionA.major - versionB.major
-  }
-
-  if (versionA.minor !== versionB.minor) {
-    return versionA.minor - versionB.minor
-  }
-
-  return versionA.patch - versionB.patch
-}
-
-export function parseSemver(version: string): Semver | null {
-  const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/)
-
-  if (!match) {
-    return null
-  }
-
-  return {
-    major: Number(match[1]),
-    minor: Number(match[2]),
-    patch: Number(match[3])
-  }
-}

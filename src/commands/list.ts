@@ -4,10 +4,8 @@ import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
 import { getSession } from '../services/session.js'
-import {
-  getPromptContentByVersion,
-  compareSemver
-} from '../utils/promptResolver.js'
+import { getPromptContentByVersion } from '../utils/promptResolver.js'
+import { compareSemver } from '../utils/semver.js'
 
 export function registerListCommand(program: Command): void {
   program
@@ -16,6 +14,26 @@ export function registerListCommand(program: Command): void {
     .argument('[target]', 'Target prompt. Example: "my-prompt" or "my-prompt@1.0.1"')
     .action(async (target: string | undefined) => {
       try {
+        // @username lookup — does not require login
+        if (target && target.startsWith('@')) {
+          const raw = target.slice(1) // remove the @
+
+          if (raw.includes('/')) {
+            console.log(
+              chalk.red('Invalid format. Use prompt-it get ' + raw + ' to get a specific prompt.')
+            )
+            return
+          }
+
+          if (!raw) {
+            console.log(chalk.red('Username is required. Use: prompt-it list @<username>'))
+            return
+          }
+
+          await listUserPublicPrompts(raw)
+          return
+        }
+
         const session = await getSession()
 
         if (!session) {
@@ -68,13 +86,13 @@ async function listAllPrompts(userId: string): Promise<void> {
 
   prompts.forEach((prompt, index) => {
     console.log(chalk.bold(`${index + 1}. ${prompt.name}`))
-    
+
     if (prompt.description) {
       console.log(chalk.gray(`   ${prompt.description}`))
     } else {
       console.log(chalk.gray(`   No description`))
     }
-    
+
     console.log(chalk.gray(`   Version: v${prompt.current_version}`))
     console.log('')
   })
@@ -117,9 +135,11 @@ async function listPromptDetails(userId: string, promptName: string): Promise<vo
     const v = sortedVersions[i]
     const isCurrent = i === 0
     const currentLabel = isCurrent ? ' (Current)' : ''
-    
-    const daysAgo = Math.floor((new Date().getTime() - new Date(v.created_at).getTime()) / (1000 * 3600 * 24))
-    let timeLabel = ''
+
+    const daysAgo = Math.floor(
+      (new Date().getTime() - new Date(v.created_at).getTime()) / (1000 * 3600 * 24)
+    )
+    let timeLabel: string
     if (daysAgo === 0) {
       timeLabel = 'Today'
     } else if (i === sortedVersions.length - 1) {
@@ -130,11 +150,15 @@ async function listPromptDetails(userId: string, promptName: string): Promise<vo
 
     console.log(`  - ${chalk.cyan('v' + v.version)}${currentLabel} - ${timeLabel}`)
   }
-  
+
   console.log('')
 }
 
-async function showVersionDiff(userId: string, promptName: string, targetVersion: string): Promise<void> {
+async function showVersionDiff(
+  userId: string,
+  promptName: string,
+  targetVersion: string
+): Promise<void> {
   const { data: prompt, error: promptError } = await supabase
     .from('prompts')
     .select('id')
@@ -160,9 +184,7 @@ async function showVersionDiff(userId: string, promptName: string, targetVersion
     throw new Error(`Could not fetch prompt versions: ${versionsError.message}`)
   }
 
-  const sortedVersions = (versions ?? [])
-    .map(v => v.version)
-    .sort((a, b) => compareSemver(a, b))
+  const sortedVersions = (versions ?? []).map((v) => v.version).sort((a, b) => compareSemver(a, b))
 
   const targetIndex = sortedVersions.indexOf(targetVersion)
 
@@ -177,7 +199,7 @@ async function showVersionDiff(userId: string, promptName: string, targetVersion
   }
 
   const targetContent = await getPromptContentByVersion(prompt.id, targetVersion)
-  const previousContent = previousVersion 
+  const previousContent = previousVersion
     ? await getPromptContentByVersion(prompt.id, previousVersion)
     : ''
 
@@ -192,7 +214,7 @@ async function showVersionDiff(userId: string, promptName: string, targetVersion
 
   for (const part of diff) {
     if (!part.value) continue
-    
+
     const lines = part.value.replace(/\n$/, '').split('\n')
     for (const line of lines) {
       if (part.added) {
@@ -205,4 +227,56 @@ async function showVersionDiff(userId: string, promptName: string, targetVersion
     }
   }
   console.log('')
+}
+
+async function listUserPublicPrompts(username: string): Promise<void> {
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('username', username)
+    .maybeSingle()
+
+  if (profileError) {
+    throw new Error(`Could not fetch user: ${profileError.message}`)
+  }
+
+  if (!profile) {
+    console.log(chalk.red(`User not found: @${username}`))
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('prompts')
+    .select('name, current_version, description')
+    .eq('owner_id', profile.id)
+    .eq('visibility', 'public')
+    .eq('status', 'active')
+    .order('name')
+
+  if (error) {
+    throw new Error(`Could not fetch prompts: ${error.message}`)
+  }
+
+  const prompts = data ?? []
+
+  if (prompts.length === 0) {
+    console.log(chalk.yellow(`@${username} has no public prompts.`))
+    return
+  }
+
+  console.log(`\n@${username}'s Public Prompts [${prompts.length}]\n`)
+
+  prompts.forEach((prompt, index) => {
+    console.log(chalk.bold(`${index + 1}. ${prompt.name}`))
+
+    if (prompt.description) {
+      console.log(chalk.gray(`   ${prompt.description}`))
+    } else {
+      console.log(chalk.gray(`   No description`))
+    }
+
+    console.log(chalk.gray(`   Version: v${prompt.current_version}`))
+    console.log(chalk.gray(`   Get: prompt-it get ${username}/${prompt.name}`))
+    console.log('')
+  })
 }

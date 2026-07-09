@@ -6,10 +6,6 @@ import { supabase } from '../services/supabase.js'
 
 const RESULTS_PER_PAGE = 10
 
-type SearchOptions = {
-  users?: boolean
-}
-
 type PromptSearchField = 'name' | 'title' | 'description' | 'username'
 
 type PromptResult = {
@@ -29,20 +25,14 @@ type UserResult = {
 
 type PageAction = 'next' | 'previous' | 'exit'
 
-const promptSearchFields: PromptSearchField[] = [
-  'name',
-  'title',
-  'description',
-  'username'
-]
+const promptSearchFields: PromptSearchField[] = ['name', 'title', 'description', 'username']
 
 export function registerSearchCommand(program: Command): void {
   program
     .command('search')
-    .description('Search public prompts or users.')
-    .argument('<query>', 'Search term.')
-    .option('--users', 'Search users instead of prompts.')
-    .action(async (query: string, options: SearchOptions) => {
+    .description('Search public prompts or users. Use @username to search users.')
+    .argument('<query>', 'Search term. Prefix with @ to search users (e.g. @username).')
+    .action(async (query: string) => {
       try {
         const normalizedQuery = query.trim()
 
@@ -51,15 +41,21 @@ export function registerSearchCommand(program: Command): void {
           return
         }
 
-        if (options.users) {
-          await searchUsers(normalizedQuery)
+        if (normalizedQuery.startsWith('@')) {
+          const userQuery = normalizedQuery.slice(1)
+
+          if (!userQuery) {
+            console.log(chalk.red('Username is required. Example: prompt-it search @username'))
+            return
+          }
+
+          await searchUsers(userQuery)
           return
         }
 
         await searchPrompts(normalizedQuery)
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Unexpected error occurred.'
+        const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
         console.log(chalk.red(`Error: ${message}`))
       }
@@ -74,7 +70,7 @@ async function searchPrompts(query: string): Promise<void> {
 
   // Run SELECT + COUNT for all fields simultaneously — no more sequential COUNT queries
   const fieldResults = await Promise.all(
-    promptSearchFields.map(field =>
+    promptSearchFields.map((field) =>
       supabase
         .from('prompts')
         .select('username, name, title, description, current_version, tags', {
@@ -88,9 +84,7 @@ async function searchPrompts(query: string): Promise<void> {
     )
   )
 
-  const matchIndex = fieldResults.findIndex(
-    r => !r.error && r.count != null && r.count > 0
-  )
+  const matchIndex = fieldResults.findIndex((r) => !r.error && r.count != null && r.count > 0)
 
   if (matchIndex === -1) {
     s.stop(chalk.yellow(`No results found for "${query}".`))
@@ -183,9 +177,7 @@ function renderPromptResults(params: {
   console.log(chalk.cyan(`Search results for "${params.query}"`))
   console.log(chalk.gray(`Matched by: ${params.field}`))
   console.log(
-    chalk.gray(
-      `Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`
-    )
+    chalk.gray(`Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`)
   )
   console.log('')
 
@@ -303,15 +295,13 @@ async function renderUserResults(params: {
   console.log('')
   console.log(chalk.cyan(`Users found for "${params.query}"`))
   console.log(
-    chalk.gray(
-      `Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`
-    )
+    chalk.gray(`Page ${params.currentPage} of ${params.totalPages} — ${params.total} result(s)`)
   )
   console.log('')
 
   // Fetch all prompt counts for this page in parallel — no more sequential queries
   const promptCounts = await Promise.all(
-    params.results.map(user => countPublicPromptsByUserId(user.id))
+    params.results.map((user) => countPublicPromptsByUserId(user.id))
   )
 
   for (const [index, user] of params.results.entries()) {

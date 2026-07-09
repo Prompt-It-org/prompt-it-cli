@@ -1,0 +1,49 @@
+{
+  "common": {
+    "error": "Error:",
+    "success": "Success:",
+    "cancel": "Operation cancelled.",
+    "yes": "Yes",
+    "no": "No",
+    "notLoggedIn": "You are not logged in. Run: prompt-it login"
+  },
+  "commands": {
+    "publish": {
+      "summaryTitle": "Publish summary",
+      "author": "Author:",
+      "name": "Name:",
+      "title": "Title:",
+      "description": "Description:",
+      "version": "Version:",
+      "tags": "Tags:",
+      "confirmPrompt": "Publish prompt?",
+      "successMessage": "Prompt published successfully:"
+    },
+    "search": {
+      "searchingPrompts": "Searching prompts...",
+      "searchingUsers": "Searching users...",
+      "noResults": "No results found for \"{{query}}\".",
+      "foundResults": "Found {{count}} result(s).",
+      "pageInfo": "Page {{current}} of {{total}} — {{count}} result(s)",
+      "matchedBy": "Matched by: {{field}}",
+      "actionNext": "Next page",
+      "actionPrev": "Previous page",
+      "actionClose": "Close search",
+      "promptPrompt": "What do you want to do?"
+    },
+    "delete": {
+      "promptNotFound": "Prompt not found: {{user}}/{{name}}",
+      "confirmPrompt": "Are you sure you want to delete the prompt \"{{name}}\" and ALL its versions? This cannot be undone.",
+      "successMessage": "Prompt deleted successfully.",
+      "versionSuccessMessage": "Deleted {{count}} version(s) successfully."
+    }
+  },
+  "services": {
+    "limits": {
+      "limitReached": "Post limit reached. You have used {{count}}/{{limit}} posts."
+    },
+    "profile": {
+      "notFound": "User profile not found. Run prompt-it register again or create a profile."
+    }
+  }
+}
