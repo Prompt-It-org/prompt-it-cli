@@ -4,7 +4,8 @@ import type { Command } from 'commander'
 
 import { supabase } from '../services/supabase.js'
 import { getSession } from '../services/session.js'
-import { getPromptContentByVersion, compareSemver } from '../utils/promptResolver.js'
+import { getPromptContentByVersion } from '../utils/promptResolver.js'
+import { compareSemver } from '../utils/semver.js'
 
 export function registerListCommand(program: Command): void {
   program

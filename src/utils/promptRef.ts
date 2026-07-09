@@ -1,3 +1,5 @@
+import { isValidSemver } from './semver.js'
+
 export type PromptRef = {
   user: string
   promptName: string
@@ -50,6 +52,3 @@ export function parsePromptRef(ref: string): PromptRef {
   }
 }
 
-function isValidSemver(version: string): boolean {
-  return /^\d+\.\d+\.\d+$/.test(version)
-}

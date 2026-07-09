@@ -11,6 +11,8 @@ import { getSession } from '../services/session.js'
 import { getProfileFromSession } from '../services/profile.js'
 import { readPromptDetails, normalizeTags } from '../utils/promptDetails.js'
 import { assertWithinPostLimit } from '../services/limits.js'
+import { isValidSemver, isVersionGreater, getChangeType } from '../utils/semver.js'
+import { isValidPromptName } from '../utils/validators.js'
 
 type PublishOptions = {
   name?: string
@@ -29,12 +31,6 @@ type PromptRecord = {
   current_content: string
   current_version: string
   tags: string[]
-}
-
-type Semver = {
-  major: number
-  minor: number
-  patch: number
 }
 
 export function registerPublishCommand(program: Command): void {
@@ -428,57 +424,4 @@ function createPromptDiff(params: {
   )
 }
 
-function getChangeType(currentVersion: string, newVersion: string): 'snapshot' | 'diff' {
-  const current = parseSemver(currentVersion)
-  const next = parseSemver(newVersion)
 
-  if (!current || !next) {
-    return 'snapshot'
-  }
-
-  const isPatchOnly =
-    current.major === next.major && current.minor === next.minor && next.patch > current.patch
-
-  return isPatchOnly ? 'diff' : 'snapshot'
-}
-
-function isVersionGreater(newVersion: string, currentVersion: string): boolean {
-  const current = parseSemver(currentVersion)
-  const next = parseSemver(newVersion)
-
-  if (!current || !next) {
-    return false
-  }
-
-  if (next.major !== current.major) {
-    return next.major > current.major
-  }
-
-  if (next.minor !== current.minor) {
-    return next.minor > current.minor
-  }
-
-  return next.patch > current.patch
-}
-
-function parseSemver(version: string): Semver | null {
-  const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/)
-
-  if (!match) {
-    return null
-  }
-
-  return {
-    major: Number(match[1]),
-    minor: Number(match[2]),
-    patch: Number(match[3])
-  }
-}
-
-function isValidPromptName(name: string): boolean {
-  return /^[a-zA-Z0-9_-]{3,60}$/.test(name)
-}
-
-function isValidSemver(version: string): boolean {
-  return /^\d+\.\d+\.\d+$/.test(version)
-}
