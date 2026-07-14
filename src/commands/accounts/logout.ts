@@ -1,5 +1,5 @@
-import chalk from 'chalk'
-import { confirm, isCancel, cancel, outro } from '@clack/prompts'
+import logger from '../../utils/logger.js'
+import { confirm, isCancel, cancel } from '@clack/prompts'
 import type { Command } from 'commander'
 
 import { getSession, clearSession } from '../../services/session.js'
@@ -13,7 +13,7 @@ export function registerLogoutCommand(program: Command): void {
         const session = await getSession()
 
         if (!session) {
-          console.log(chalk.yellow('You are not logged in.'))
+          logger.warn('You are not logged in.')
           return
         }
 
@@ -29,11 +29,11 @@ export function registerLogoutCommand(program: Command): void {
 
         await clearSession()
 
-        outro(chalk.green('Logged out successfully.'))
+        logger.success('Logged out successfully.', true)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-        console.log(chalk.red(`Error: ${message}`))
+        logger.error(`Error: ${message}`)
       }
     })
 }

@@ -1,5 +1,5 @@
-import chalk from 'chalk'
-import { text, password, isCancel, cancel, outro } from '@clack/prompts'
+import logger from '../../utils/logger.js'
+import { text, password, isCancel, cancel } from '@clack/prompts'
 import type { Command } from 'commander'
 
 import { supabase } from '../../services/supabase.js'
@@ -43,12 +43,12 @@ export function registerLoginCommand(program: Command): void {
         })
 
         if (error) {
-          console.log(chalk.red(`Error: ${error.message}`))
+          logger.error(`Error: ${error.message}`)
           return
         }
 
         if (!data.session || !data.user) {
-          console.log(chalk.red('Login failed. No session was returned.'))
+          logger.error('Login failed. No session was returned.')
           return
         }
 
@@ -61,11 +61,11 @@ export function registerLoginCommand(program: Command): void {
           }
         })
 
-        outro(chalk.green('Logged in successfully.'))
+        logger.success('Logged in successfully.', true)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unexpected error occurred.'
 
-        console.log(chalk.red(`Error: ${message}`))
+        logger.error(`Error: ${message}`)
       }
     })
 }
