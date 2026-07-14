@@ -156,7 +156,7 @@ async function showPromptAndAskAction(prompt: ResolvedPrompt, isOwner: boolean):
   }
 
   if (action === 'skill') {
-    outro('Skill integration is coming soon.')
+    logger.info('Skill integration is coming soon.')
   }
 
   if (isOwner) {
