@@ -93,7 +93,8 @@ if (error) {
 ## 6. GitHub CLI and Contributions
 
 **RULE:**
-Whenever performing repository operations via the GitHub CLI (such as opening Pull Requests or creating issues), you MUST read and strictly adhere to the established templates and patterns located in the `.github` directory (e.g., `PULL_REQUEST_TEMPLATE.md` or issue templates). Do not use generic descriptions; always format your PRs and commits according to the project's standardized structure.
+Whenever performing repository operations via the GitHub CLI (such as opening Pull Requests or creating issues), you MUST read and strictly adhere to the established templates and patterns located in the `.github` directory (e.g., `PULL_REQUEST_TEMPLATE.md` or issue templates). Do not use generic descriptions; always format your PRs and commits according to the project's standardized structure. 
+Additionally, you MUST apply appropriate GitHub tags (labels) whenever possible when creating or updating Issues and Pull Requests (e.g., using `--label "bug"`, `--label "enhancement"`, etc. via the `gh` CLI) to maintain repository organization.
 
 ---
 
