@@ -3,6 +3,24 @@
   "version": "0.1.0",
   "type": "module",
   "description": "CLI tool for storing, organizing, versioning, and reusing prompts.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prompt-integration-toolkit/prompt-it-cli.git"
+  },
+  "keywords": [
+    "prompt",
+    "cli",
+    "ai",
+    "llm",
+    "tools",
+    "manager"
+  ],
+  "author": "prompt-integration-toolkit",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/prompt-integration-toolkit/prompt-it-cli/issues"
+  },
+  "homepage": "https://github.com/prompt-integration-toolkit/prompt-it-cli#readme",
   "bin": {
     "prompt-it": "./bin/prompt-it.js"
   },
