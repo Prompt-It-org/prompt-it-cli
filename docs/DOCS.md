@@ -52,6 +52,7 @@ These commands allow you to initialize new prompt projects, publish them, and ke
 
 * `prompt-it publish`
   Publishes a new prompt to the platform. The command can automatically read the `prompt-details.json` file in the current directory, or you can pass options via the command line.
+  * **Supported File Types**: Only text-based files are allowed (`.md`, `.txt`, `.yaml`, `.yml`, `.json`, `.xml`, `.docs`, `.log`). Executables or binaries (like `.exe`, `.png`) will be rejected to prevent data corruption.
   * **Options**:
     * `--name <name>`: Defines the unique name (slug) of the prompt.
     * `--title <title>`: A user-friendly title for the prompt.
@@ -59,7 +60,7 @@ These commands allow you to initialize new prompt projects, publish them, and ke
     * `--tags <tags>`: A comma-separated list of tags for categorization (e.g., `code,review,ai`).
 
 * `prompt-it update`
-  Updates the content or metadata of your prompt that is already published on the platform, creating a new version linked to it.
+  Updates the content or metadata of your prompt that is already published on the platform, creating a new version linked to it. Like `publish`, it only accepts the supported text file types.
   * **Options**:
     * The same creation options (`--name`, `--title`, `--description`, `--tags`).
     * `--message <message>`: A commit message briefly indicating what changed in this new version.
