@@ -1,3 +1,21 @@
+import path from 'node:path'
+
+export const ALLOWED_EXTENSIONS = [
+  '.md',
+  '.txt',
+  '.yaml',
+  '.yml',
+  '.json',
+  '.xml',
+  '.docs',
+  '.log'
+]
+
+export function isValidPromptExtension(filename: string): boolean {
+  const ext = path.extname(filename).toLowerCase()
+  return ALLOWED_EXTENSIONS.includes(ext)
+}
+
 export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }

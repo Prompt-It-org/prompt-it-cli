@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isValidEmail, isValidUsername, isValidPromptName } from '../src/utils/validators.js'
+import { isValidEmail, isValidUsername, isValidPromptName, isValidPromptExtension } from '../src/utils/validators.js'
 
 describe('isValidEmail', () => {
   it('accepts valid email addresses', () => {
@@ -89,5 +89,39 @@ describe('isValidPromptName', () => {
     expect(isValidPromptName('my@prompt')).toBe(false)
     expect(isValidPromptName('my.prompt')).toBe(false)
     expect(isValidPromptName('my/prompt')).toBe(false)
+  })
+})
+
+describe('isValidPromptExtension', () => {
+  it('accepts valid text extensions', () => {
+    expect(isValidPromptExtension('test.md')).toBe(true)
+    expect(isValidPromptExtension('file.yaml')).toBe(true)
+    expect(isValidPromptExtension('data.json')).toBe(true)
+    expect(isValidPromptExtension('log.txt')).toBe(true)
+    expect(isValidPromptExtension('config.yml')).toBe(true)
+    expect(isValidPromptExtension('data.xml')).toBe(true)
+    expect(isValidPromptExtension('readme.docs')).toBe(true)
+    expect(isValidPromptExtension('server.log')).toBe(true)
+  })
+
+  it('accepts valid extensions case-insensitively', () => {
+    expect(isValidPromptExtension('TEST.MD')).toBe(true)
+    expect(isValidPromptExtension('file.YaMl')).toBe(true)
+  })
+
+  it('rejects invalid or binary extensions', () => {
+    expect(isValidPromptExtension('prompt.exe')).toBe(false)
+    expect(isValidPromptExtension('image.png')).toBe(false)
+    expect(isValidPromptExtension('doc.pdf')).toBe(false)
+    expect(isValidPromptExtension('script.js')).toBe(false)
+  })
+
+  it('rejects files without extensions', () => {
+    expect(isValidPromptExtension('sem_extensao')).toBe(false)
+  })
+
+  it('handles multiple extensions correctly', () => {
+    expect(isValidPromptExtension('script.tar.gz')).toBe(false)
+    expect(isValidPromptExtension('data.json.txt')).toBe(true)
   })
 })

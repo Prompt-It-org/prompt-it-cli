@@ -13,7 +13,7 @@ import { getProfileFromSession } from '../services/profile.js'
 import { readPromptDetails, normalizeTags } from '../utils/promptDetails.js'
 import { assertWithinPostLimit } from '../services/limits.js'
 import { isValidSemver, isVersionGreater, getChangeType } from '../utils/semver.js'
-import { isValidPromptName } from '../utils/validators.js'
+import { isValidPromptName, isValidPromptExtension, ALLOWED_EXTENSIONS } from '../utils/validators.js'
 
 type PublishOptions = {
   name?: string
@@ -38,7 +38,7 @@ export function registerPublishCommand(program: Command): void {
   const publishCommand = program
     .command('publish')
     .description('Publish a prompt to Prompt-it.')
-    .argument('[promptFile]', 'Markdown prompt file.')
+    .argument('[promptFile]', 'Text prompt file (e.g. .md, .txt).')
     .option('--name <name>', 'Prompt name.')
     .option('--title <title>', 'Prompt title.')
     .option('--description <description>', 'Prompt description.')
@@ -50,7 +50,7 @@ export function registerPublishCommand(program: Command): void {
   publishCommand
     .command('update')
     .description('Update an existing published prompt.')
-    .argument('[promptFile]', 'Markdown prompt file.')
+    .argument('[promptFile]', 'Text prompt file (e.g. .md, .txt).')
     .option('--name <name>', 'Prompt name.')
     .option('--title <title>', 'Prompt title.')
     .option('--description <description>', 'Prompt description.')
@@ -94,6 +94,13 @@ async function handleInitialPublish(
 
     if (!promptFile) {
       logger.error('Prompt file is required.')
+      return
+    }
+
+    if (!isValidPromptExtension(promptFile)) {
+      logger.validation(
+        `Invalid file extension. Allowed extensions are: ${ALLOWED_EXTENSIONS.join(', ')}`
+      )
       return
     }
 
@@ -230,6 +237,13 @@ async function handlePublishUpdate(
 
     if (!promptFile) {
       logger.error('Prompt file is required.')
+      return
+    }
+
+    if (!isValidPromptExtension(promptFile)) {
+      logger.validation(
+        `Invalid file extension. Allowed extensions are: ${ALLOWED_EXTENSIONS.join(', ')}`
+      )
       return
     }
 
